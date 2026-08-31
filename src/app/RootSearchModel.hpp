@@ -16,8 +16,10 @@ class ClipboardService;
 class SnippetService;
 class CalculatorSection;
 class AppSection;
+class BuiltinCommandsSection;
 class SnippetSection;
 class FileSection;
+class Navigation;
 
 class RootSearchModel : public SectionListModel {
     Q_OBJECT
@@ -31,6 +33,9 @@ public:
     QString query() const { return m_query; }
     void setQuery(const QString &query);
     bool isLoading() const { return m_isLoading; }
+
+    // Enables built-in commands that push views (not owned).
+    void setNavigation(Navigation *navigation) { m_navigation = navigation; }
 
 signals:
     void queryChanged();
@@ -52,6 +57,8 @@ private:
 
     std::unique_ptr<CalculatorSection> m_calcSection;
     std::unique_ptr<AppSection> m_appSection;
+    std::unique_ptr<BuiltinCommandsSection> m_builtinSection;
     std::unique_ptr<SnippetSection> m_snippetSection;
     std::unique_ptr<FileSection> m_fileSection;
+    Navigation *m_navigation = nullptr;
 };

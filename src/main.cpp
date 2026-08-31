@@ -20,6 +20,7 @@
 #include "app/RootSearchModel.hpp"
 #include "app/ThemeBridge.hpp"
 #include "app/ConfigBridge.hpp"
+#include "core/nav/Navigation.hpp"
 
 static const QString kInstanceName = QStringLiteral("atlas-launcher-instance");
 
@@ -99,7 +100,11 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("Theme", &themeBridge);
     engine.rootContext()->setContextProperty("Config", &configBridge);
 
+    Navigation navigation;
+    engine.rootContext()->setContextProperty("nav", &navigation);
+
     RootSearchModel searchModel;
+    searchModel.setNavigation(&navigation);
     engine.rootContext()->setContextProperty("searchModel", &searchModel);
 
     const QUrl url(QStringLiteral("qrc:/Atlas/src/ui/MainPalette.qml"));

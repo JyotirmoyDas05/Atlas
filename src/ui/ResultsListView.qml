@@ -6,6 +6,12 @@ import QtQuick.Controls
 Item {
     id: root
 
+    // Any SectionListModel-derived model.
+    required property var listModel
+    property bool loading: false
+    property string emptyTitle: "No results found"
+    property string emptyDescription: ""
+
     property alias currentIndex: listView.currentIndex
     property alias count: listView.count
 
@@ -13,7 +19,7 @@ Item {
     signal itemSelected(int index)
 
     function moveDown() {
-        const next = searchModel.nextSelectableIndex(listView.currentIndex, 1);
+        const next = root.listModel.nextSelectableIndex(listView.currentIndex, 1);
         if (next !== listView.currentIndex) {
             listView.currentIndex = next;
             listView.positionViewAtIndex(next, ListView.Contain);
@@ -21,7 +27,7 @@ Item {
     }
 
     function moveUp() {
-        const next = searchModel.nextSelectableIndex(listView.currentIndex, -1);
+        const next = root.listModel.nextSelectableIndex(listView.currentIndex, -1);
         if (next !== listView.currentIndex) {
             listView.currentIndex = next;
             listView.positionViewAtIndex(next, ListView.Contain);
@@ -30,15 +36,15 @@ Item {
 
     function activateCurrent() {
         root.itemActivated(listView.currentIndex);
-        searchModel.activateSelected();
+        root.listModel.activateSelected();
     }
 
     // Empty View
     EmptyView {
         anchors.centerIn: parent
-        visible: listView.count === 0 && !searchModel.isLoading
-        title: searchModel.query === "" ? "No recent items" : "No results found"
-        description: searchModel.query === "" ? "Type to search apps, files, snippets, and math expressions" : "No matches for '" + searchModel.query + "'"
+        visible: listView.count === 0 && !root.loading
+        title: root.emptyTitle
+        description: root.emptyDescription
     }
 
     ListView {
@@ -55,19 +61,19 @@ Item {
         topMargin: 4
         bottomMargin: 4
 
-        model: searchModel
-        currentIndex: searchModel.selectedIndex
+        model: root.listModel
+        currentIndex: root.listModel.selectedIndex
 
         onCurrentIndexChanged: {
-            searchModel.selectedIndex = currentIndex;
+            root.listModel.selectedIndex = currentIndex;
             root.itemSelected(currentIndex);
         }
 
         // Sync when the model rebuilds (new query / async results landing)
         Connections {
-            target: searchModel
+            target: root.listModel
             function onSelectedIndexChanged() {
-                listView.currentIndex = searchModel.selectedIndex;
+                listView.currentIndex = root.listModel.selectedIndex;
                 if (listView.currentIndex >= 0)
                     listView.positionViewAtIndex(listView.currentIndex, ListView.Contain);
             }
@@ -127,7 +133,7 @@ Item {
                     onActivated: {
                         listView.currentIndex = delegateLoader.index;
                         root.itemActivated(delegateLoader.index);
-                        searchModel.activateRow(delegateLoader.index);
+                        root.listModel.activateRow(delegateLoader.index);
                     }
                 }
             }
@@ -151,7 +157,7 @@ Item {
                     onActivated: {
                         listView.currentIndex = delegateLoader.index;
                         root.itemActivated(delegateLoader.index);
-                        searchModel.activateRow(delegateLoader.index);
+                        root.listModel.activateRow(delegateLoader.index);
                     }
                 }
             }

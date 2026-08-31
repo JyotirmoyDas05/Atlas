@@ -51,6 +51,28 @@ private:
     QString m_query;
 };
 
+// Built-in commands surfaced in root search (e.g. Clipboard History).
+class BuiltinCommandsSection : public SectionSource {
+public:
+    struct Command {
+        QString id;
+        QString title;
+    };
+
+    explicit BuiltinCommandsSection(std::function<void(const QString &commandId)> onActivate);
+
+    QString sectionName() const override { return QStringLiteral("Commands"); }
+    int count() const override { return static_cast<int>(m_items.size()); }
+    QVariantMap item(int index) const override { return m_items.value(index).toMap(); }
+    void activate(int index) override;
+    void setFilter(const QString &query) override;
+
+private:
+    std::function<void(const QString &)> m_onActivate;
+    std::vector<Command> m_commands;
+    QVariantList m_items;
+};
+
 class SnippetSection : public SectionSource {
 public:
     explicit SnippetSection(SnippetService *snippets);

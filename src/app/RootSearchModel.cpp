@@ -2,6 +2,8 @@
 
 #include "PerfTrace.hpp"
 #include "RootSearchSections.hpp"
+#include "core/nav/Navigation.hpp"
+#include "views/ClipboardHistoryViewHost.hpp"
 #include "services/apps/AppSearchService.hpp"
 #include "services/calculator/CalculatorService.hpp"
 #include "services/clipboard/ClipboardService.hpp"
@@ -35,6 +37,12 @@ RootSearchModel::RootSearchModel(QObject *parent)
 
     m_calcSection = std::make_unique<CalculatorSection>(m_calculator.get());
     m_appSection = std::make_unique<AppSection>(m_appSearch.get());
+    m_builtinSection = std::make_unique<BuiltinCommandsSection>([this](const QString &commandId) {
+        if (!m_navigation)
+            return;
+        if (commandId == QLatin1String("clipboard-history"))
+            m_navigation->push(new ClipboardHistoryViewHost(m_clipboard.get()));
+    });
     m_snippetSection = std::make_unique<SnippetSection>(m_snippets.get());
     m_fileSection = std::make_unique<FileSection>(m_fileIndex.get(), m_fileSearch.get(), this);
 
@@ -43,6 +51,7 @@ RootSearchModel::RootSearchModel(QObject *parent)
     // Display order.
     addSource(m_calcSection.get());
     addSource(m_appSection.get());
+    addSource(m_builtinSection.get());
     addSource(m_snippetSection.get());
     addSource(m_fileSection.get());
 

@@ -58,7 +58,7 @@ Window {
                         Layout.alignment: Qt.AlignVCenter
                     }
 
-                    // Search input
+                    // Search input — routes to root search or the pushed view
                     TextInput {
                         id: searchInput
                         Layout.fillWidth: true
@@ -74,14 +74,25 @@ Window {
                         Text {
                             anchors.fill: parent
                             verticalAlignment: Text.AlignVCenter
-                            text: "Search apps, files, commands…"
+                            text: nav.searchPlaceholder
                             color: Theme.textPlaceholder
                             font: searchInput.font
                             visible: searchInput.text === "" && !searchInput.activeFocus
                         }
 
-                        onTextChanged: searchModel.query = searchInput.text
-                        KeyNavigation.down: resultsList
+                        onTextChanged: {
+                            if (nav.depth > 0)
+                                nav.currentView.setFilterText(searchInput.text);
+                            else
+                                searchModel.query = searchInput.text;
+                        }
+
+                        Keys.onPressed: function(event) {
+                            if (event.key === Qt.Key_Backspace && searchInput.text === "" && nav.depth > 0) {
+                                nav.pop();
+                                event.accepted = true;
+                            }
+                        }
                     }
 
                     ShortcutBadge {
@@ -99,14 +110,34 @@ Window {
                 loading: searchModel.isLoading
             }
 
-            // Results List 
-            ResultsListView {
-                id: resultsList
+            // View stack: root search at the bottom, pushed views above it
+            StackView {
+                id: viewStack
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                clip: true
 
-                onItemActivated: function(index) {
-                    console.log("[Atlas] Activated index:", index);
+                initialItem: rootResultsComponent
+
+                // Palette navigation is instant, never animated.
+                pushEnter: null
+                pushExit: null
+                popEnter: null
+                popExit: null
+                replaceEnter: null
+                replaceExit: null
+            }
+
+            Component {
+                id: rootResultsComponent
+
+                ResultsListView {
+                    listModel: searchModel
+                    loading: searchModel.isLoading
+                    emptyTitle: searchModel.query === "" ? "No recent items" : "No results found"
+                    emptyDescription: searchModel.query === ""
+                        ? "Type to search apps, files, snippets, and math expressions"
+                        : "No matches for '" + searchModel.query + "'"
                 }
             }
 
@@ -117,11 +148,11 @@ Window {
                 color: Theme.mainWindowBorder
             }
 
-            // Footer 
+            // Footer
             Footer {
                 id: footer
                 Layout.fillWidth: true
-                navigationTitle: searchModel.selectedTitle
+                navigationTitle: nav.depth > 0 ? nav.currentTitle : searchModel.selectedTitle
                 actionPanelOpen: actionPanel.open
 
                 onPrimaryActionRequested: {
@@ -148,13 +179,31 @@ Window {
         }
     }
 
-    // Keyboard shortcuts 
+    // Navigation stack mirror — C++ Navigation drives the QML StackView
+    Connections {
+        target: nav
+
+        function onViewPushed(componentUrl, properties) {
+            viewStack.push(componentUrl, properties, StackView.Immediate);
+            searchInput.clear();
+            searchInput.forceActiveFocus();
+        }
+
+        function onViewPopped() {
+            viewStack.pop(StackView.Immediate);
+            searchInput.clear();
+            searchInput.forceActiveFocus();
+        }
+    }
+
+    // Keyboard shortcuts — routed to the current stack item (duck-typed
+    // moveUp/moveDown/activateCurrent contract)
 
     Shortcut {
         sequence: "Down"
         onActivated: {
             if (actionPanel.open) { actionPanel.moveDown(); return; }
-            resultsList.moveDown();
+            viewStack.currentItem.moveDown();
         }
     }
 
@@ -162,7 +211,7 @@ Window {
         sequence: "Up"
         onActivated: {
             if (actionPanel.open) { actionPanel.moveUp(); return; }
-            resultsList.moveUp();
+            viewStack.currentItem.moveUp();
         }
     }
 
@@ -170,7 +219,7 @@ Window {
         sequence: "Return"
         onActivated: {
             if (actionPanel.open) { actionPanel.activateCurrent(); return; }
-            resultsList.activateCurrent();
+            viewStack.currentItem.activateCurrent();
         }
     }
 
@@ -184,6 +233,10 @@ Window {
         onActivated: {
             if (actionPanel.open) {
                 actionPanel.open = false;
+                return;
+            }
+            if (nav.depth > 0) {
+                nav.pop();
                 return;
             }
             rootWindow.close();

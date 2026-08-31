@@ -125,6 +125,43 @@ void AppSection::activate(int index) {
 }
 
 // ---------------------------------------------------------------------------
+// Built-in commands
+// ---------------------------------------------------------------------------
+
+BuiltinCommandsSection::BuiltinCommandsSection(
+    std::function<void(const QString &)> onActivate)
+    : m_onActivate(std::move(onActivate)) {
+    m_commands = {
+        {.id = "clipboard-history", .title = "Clipboard History"},
+    };
+}
+
+void BuiltinCommandsSection::setFilter(const QString &query) {
+    m_items.clear();
+    const fuzzy::Query fq(query);
+
+    for (const auto &cmd : m_commands) {
+        if (!query.isEmpty()) {
+            const std::array fields = {fuzzy::Field{.text = cmd.title, .weight = 1.0f}};
+            const auto qs = fuzzy::scoreFields(fields, fq);
+            if (!qs.matched || qs.quality < fuzzy::MIN_QUALITY)
+                continue;
+        }
+        m_items.append(QVariantMap{
+            {"itemId", "builtin:" + cmd.id},
+            {"title", cmd.title},
+            {"type", "Built-in"},
+            {"commandId", cmd.id},
+        });
+    }
+}
+
+void BuiltinCommandsSection::activate(int index) {
+    if (m_onActivate)
+        m_onActivate(m_items.value(index).toMap().value("commandId").toString());
+}
+
+// ---------------------------------------------------------------------------
 // Snippets
 // ---------------------------------------------------------------------------
 

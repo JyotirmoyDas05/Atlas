@@ -49,6 +49,7 @@ public:
     Q_INVOKABLE int nextSelectableIndex(int from, int direction) const;
     Q_INVOKABLE void activateSelected();
     Q_INVOKABLE void activateRow(int row);
+    Q_INVOKABLE void setFilterText(const QString &query) { applyFilter(query); }
 
 signals:
     void selectedIndexChanged();

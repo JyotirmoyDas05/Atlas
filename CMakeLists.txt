@@ -46,6 +46,11 @@ qt_add_executable(atlas
     src/core/list/SectionSource.hpp
     src/core/list/SectionListModel.hpp
     src/core/list/SectionListModel.cpp
+    src/core/nav/ViewHost.hpp
+    src/core/nav/Navigation.hpp
+    src/core/nav/Navigation.cpp
+    src/app/views/ClipboardHistoryViewHost.hpp
+    src/app/views/ClipboardHistoryViewHost.cpp
     src/services/apps/AppSearchService.hpp
     src/services/apps/AppSearchService.cpp
     src/services/files/WinFileSearchService.hpp
@@ -86,6 +91,7 @@ qt_add_qml_module(atlas
         src/ui/ActionItemDelegate.qml
         src/ui/ActionPanelPopover.qml
         src/ui/ResultsListView.qml
+        src/ui/ListPageView.qml
 )
 
 target_link_libraries(atlas PRIVATE
