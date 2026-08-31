@@ -58,6 +58,13 @@ qt_add_executable(atlas
     src/core/actions/ActionPanelModel.cpp
     src/core/actions/ActionPanelController.hpp
     src/core/actions/ActionPanelController.cpp
+    src/core/commands/Command.hpp
+    src/core/commands/CommandRegistry.hpp
+    src/core/config/Jsonc.hpp
+    src/core/config/Jsonc.cpp
+    src/core/config/ConfigValue.hpp
+    src/core/config/ConfigManager.hpp
+    src/core/config/ConfigManager.cpp
     src/app/views/ClipboardHistoryViewHost.hpp
     src/app/views/ClipboardHistoryViewHost.cpp
     src/services/apps/AppSearchService.hpp

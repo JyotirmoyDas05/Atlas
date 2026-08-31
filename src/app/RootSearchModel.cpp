@@ -2,6 +2,7 @@
 
 #include "PerfTrace.hpp"
 #include "RootSearchSections.hpp"
+#include "core/commands/Command.hpp"
 #include "core/nav/Navigation.hpp"
 #include "views/ClipboardHistoryViewHost.hpp"
 #include "services/apps/AppSearchService.hpp"
@@ -35,14 +36,17 @@ RootSearchModel::RootSearchModel(QObject *parent)
       m_clipboard(std::make_unique<ClipboardService>(this)),
       m_snippets(std::make_unique<SnippetService>(this)) {
 
+    // Register built-in commands. Extension-provided commands will register
+    // into the same CommandRegistry once extensions exist.
+    ClipboardService *clipboard = m_clipboard.get();
+    auto clipboardHistory = std::make_shared<Command>(
+        QStringLiteral("clipboard-history"), QStringLiteral("Clipboard History"),
+        [clipboard](Navigation &nav) { nav.push(new ClipboardHistoryViewHost(clipboard)); });
+    m_commandRegistry.add(clipboardHistory);
+
     m_calcSection = std::make_unique<CalculatorSection>(m_calculator.get());
     m_appSection = std::make_unique<AppSection>(m_appSearch.get());
-    m_builtinSection = std::make_unique<BuiltinCommandsSection>([this](const QString &commandId) {
-        if (!m_navigation)
-            return;
-        if (commandId == QLatin1String("clipboard-history"))
-            m_navigation->push(new ClipboardHistoryViewHost(m_clipboard.get()));
-    });
+    m_commandsSection = std::make_unique<CommandsSection>(&m_commandRegistry);
     m_snippetSection = std::make_unique<SnippetSection>(m_snippets.get());
     m_fileSection = std::make_unique<FileSection>(m_fileIndex.get(), m_fileSearch.get(), this);
 
@@ -51,7 +55,7 @@ RootSearchModel::RootSearchModel(QObject *parent)
     // Display order.
     addSource(m_calcSection.get());
     addSource(m_appSection.get());
-    addSource(m_builtinSection.get());
+    addSource(m_commandsSection.get());
     addSource(m_snippetSection.get());
     addSource(m_fileSection.get());
 
@@ -64,6 +68,11 @@ RootSearchModel::RootSearchModel(QObject *parent)
 }
 
 RootSearchModel::~RootSearchModel() = default;
+
+void RootSearchModel::setNavigation(Navigation *navigation) {
+    m_navigation = navigation;
+    m_commandsSection->setNavigation(navigation);
+}
 
 void RootSearchModel::setQuery(const QString &query) {
     if (m_query == query)

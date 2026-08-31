@@ -1,6 +1,8 @@
 #include "RootSearchSections.hpp"
 
 #include "core/actions/ActionPanelState.hpp"
+#include "core/commands/Command.hpp"
+#include "core/commands/CommandRegistry.hpp"
 #include "core/fuzzy/Fuzzy.hpp"
 #include "services/apps/AppSearchService.hpp"
 #include "services/calculator/CalculatorService.hpp"
@@ -167,40 +169,40 @@ std::unique_ptr<ActionPanelState> AppSection::actionsFor(int index) const {
 }
 
 // ---------------------------------------------------------------------------
-// Built-in commands
+// Commands
 // ---------------------------------------------------------------------------
 
-BuiltinCommandsSection::BuiltinCommandsSection(
-    std::function<void(const QString &)> onActivate)
-    : m_onActivate(std::move(onActivate)) {
-    m_commands = {
-        {.id = "clipboard-history", .title = "Clipboard History"},
+CommandsSection::CommandsSection(const CommandRegistry *registry)
+    : m_registry(registry), m_navigation(nullptr) {}
+
+QVariantMap CommandsSection::item(int index) const {
+    const auto &cmd = m_filtered[index];
+    return QVariantMap{
+        {"itemId", "command:" + cmd->id()},
+        {"title", cmd->title()},
+        {"icon", cmd->icon()},
+        {"type", "Built-in"},
     };
 }
 
-void BuiltinCommandsSection::setFilter(const QString &query) {
-    m_items.clear();
+void CommandsSection::setFilter(const QString &query) {
+    m_filtered.clear();
     const fuzzy::Query fq(query);
 
-    for (const auto &cmd : m_commands) {
+    for (const auto &cmd : m_registry->commands()) {
         if (!query.isEmpty()) {
-            const std::array fields = {fuzzy::Field{.text = cmd.title, .weight = 1.0f}};
+            const std::array fields = {fuzzy::Field{.text = cmd->title(), .weight = 1.0f}};
             const auto qs = fuzzy::scoreFields(fields, fq);
             if (!qs.matched || qs.quality < fuzzy::MIN_QUALITY)
                 continue;
         }
-        m_items.append(QVariantMap{
-            {"itemId", "builtin:" + cmd.id},
-            {"title", cmd.title},
-            {"type", "Built-in"},
-            {"commandId", cmd.id},
-        });
+        m_filtered.push_back(cmd);
     }
 }
 
-void BuiltinCommandsSection::activate(int index) {
-    if (m_onActivate)
-        m_onActivate(m_items.value(index).toMap().value("commandId").toString());
+void CommandsSection::activate(int index) {
+    if (m_navigation)
+        m_filtered[index]->execute(*m_navigation);
 }
 
 // ---------------------------------------------------------------------------

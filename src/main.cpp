@@ -14,6 +14,7 @@
 #include <QMutex>
 #include <QPainter>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QSystemTrayIcon>
 #include <QTextStream>
 #include "app/AtlasNativeHost.hpp"
@@ -21,6 +22,7 @@
 #include "app/ThemeBridge.hpp"
 #include "app/ConfigBridge.hpp"
 #include "core/actions/ActionPanelController.hpp"
+#include "core/config/ConfigManager.hpp"
 #include "core/nav/ListViewHostBase.hpp"
 #include "core/nav/Navigation.hpp"
 
@@ -98,7 +100,10 @@ int main(int argc, char *argv[]) {
 
     // Expose Theme and Config bridges to QML
     ThemeBridge themeBridge;
-    ConfigBridge configBridge;
+    const QString configPath =
+        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/atlas/config/settings.jsonc";
+    ConfigManager configManager(configPath);
+    ConfigBridge configBridge(&configManager);
     engine.rootContext()->setContextProperty("Theme", &themeBridge);
     engine.rootContext()->setContextProperty("Config", &configBridge);
 

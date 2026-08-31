@@ -53,26 +53,30 @@ private:
     QString m_query;
 };
 
-// Built-in commands surfaced in root search (e.g. Clipboard History).
-class BuiltinCommandsSection : public SectionSource {
-public:
-    struct Command {
-        QString id;
-        QString title;
-    };
+// Built-in commands surfaced in root search (e.g. Clipboard History). Backed
+// by CommandRegistry so extension-provided commands can join the same list
+// later without this section changing.
+class CommandRegistry;
+class Command;
+class Navigation;
 
-    explicit BuiltinCommandsSection(std::function<void(const QString &commandId)> onActivate);
+class CommandsSection : public SectionSource {
+public:
+    explicit CommandsSection(const CommandRegistry *registry);
+
+    // Set once Navigation exists (see RootSearchModel::setNavigation).
+    void setNavigation(Navigation *navigation) { m_navigation = navigation; }
 
     QString sectionName() const override { return QStringLiteral("Commands"); }
-    int count() const override { return static_cast<int>(m_items.size()); }
-    QVariantMap item(int index) const override { return m_items.value(index).toMap(); }
+    int count() const override { return static_cast<int>(m_filtered.size()); }
+    QVariantMap item(int index) const override;
     void activate(int index) override;
     void setFilter(const QString &query) override;
 
 private:
-    std::function<void(const QString &)> m_onActivate;
-    std::vector<Command> m_commands;
-    QVariantList m_items;
+    const CommandRegistry *m_registry;
+    Navigation *m_navigation;
+    std::vector<std::shared_ptr<Command>> m_filtered;
 };
 
 class SnippetSection : public SectionSource {

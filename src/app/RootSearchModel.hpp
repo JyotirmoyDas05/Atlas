@@ -4,6 +4,7 @@
 // (calculator, apps, snippets, files) and exposes one sectioned list to QML
 // under the `searchModel` context property.
 
+#include "core/commands/CommandRegistry.hpp"
 #include "core/list/SectionListModel.hpp"
 
 #include <memory>
@@ -16,7 +17,7 @@ class ClipboardService;
 class SnippetService;
 class CalculatorSection;
 class AppSection;
-class BuiltinCommandsSection;
+class CommandsSection;
 class SnippetSection;
 class FileSection;
 class Navigation;
@@ -35,7 +36,7 @@ public:
     bool isLoading() const { return m_isLoading; }
 
     // Enables built-in commands that push views (not owned).
-    void setNavigation(Navigation *navigation) { m_navigation = navigation; }
+    void setNavigation(Navigation *navigation);
 
 signals:
     void queryChanged();
@@ -55,9 +56,11 @@ private:
     std::unique_ptr<ClipboardService> m_clipboard;
     std::unique_ptr<SnippetService> m_snippets;
 
+    CommandRegistry m_commandRegistry;
+
     std::unique_ptr<CalculatorSection> m_calcSection;
     std::unique_ptr<AppSection> m_appSection;
-    std::unique_ptr<BuiltinCommandsSection> m_builtinSection;
+    std::unique_ptr<CommandsSection> m_commandsSection;
     std::unique_ptr<SnippetSection> m_snippetSection;
     std::unique_ptr<FileSection> m_fileSection;
     Navigation *m_navigation = nullptr;
