@@ -18,5 +18,7 @@ feature set, which lacks Vicinae's `ApplicationContext`/`ImageURL` machinery):
   `src/server/src/ui/action-pannel/action.hpp`
 - `src/core/actions/ActionPanelState.hpp` — adapted from
   `src/server/src/ui/action-pannel/action-panel-state.hpp`
+- `src/core/config/ConfigValue.hpp` — adapted from the `Partial<T>` /
+  merge-over-defaults pattern in `src/server/src/config/config.hpp`
 
 Each file carries its own header comment with this same attribution.
