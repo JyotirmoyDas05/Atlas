@@ -1,17 +1,44 @@
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickWindow>
 #include <QIcon>
 #include <QDebug>
 #include <QDateTime>
+#include <QDir>
 #include <QFile>
+#include <QFont>
+#include <QLocalServer>
+#include <QLocalSocket>
+#include <QMenu>
 #include <QMutex>
+#include <QPainter>
+#include <QSettings>
+#include <QSystemTrayIcon>
 #include <QTextStream>
 #include "app/AtlasNativeHost.hpp"
 #include "app/SearchViewModel.hpp"
 #include "app/ThemeBridge.hpp"
 #include "app/ConfigBridge.hpp"
+
+static const QString kInstanceName = QStringLiteral("atlas-launcher-instance");
+
+// Simple generated glyph icon so the tray works without shipping an asset yet.
+static QIcon makeAppIcon() {
+    QPixmap pm(64, 64);
+    pm.fill(Qt::transparent);
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setBrush(QColor(30, 30, 40));
+    p.setPen(Qt::NoPen);
+    p.drawRoundedRect(pm.rect(), 14, 14);
+    QFont font(QStringLiteral("Segoe UI"), 34, QFont::Bold);
+    p.setFont(font);
+    p.setPen(QColor(240, 240, 245));
+    p.drawText(pm.rect(), Qt::AlignCenter, QStringLiteral("A"));
+    p.end();
+    return QIcon(pm);
+}
 
 // Keep the log file open for the process lifetime: reopening per line costs a
 // synchronous file open on hot paths (every qDebug during search/toggle).
@@ -36,13 +63,33 @@ int main(int argc, char *argv[]) {
     qInstallMessageHandler(fileLogHandler);
     qDebug() << "[Atlas] main() started.";
 
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
 
     // CRITICAL: Prevent application from quitting when launcher window is hidden
     app.setQuitOnLastWindowClosed(false);
 
     app.setOrganizationName("Atlas");
     app.setApplicationName("Atlas Launcher");
+    app.setWindowIcon(makeAppIcon());
+
+    // Single instance: if another Atlas owns the socket, ask it to show itself
+    // and exit. Two instances would fight over the keyboard hook.
+    {
+        QLocalSocket probe;
+        probe.connectToServer(kInstanceName);
+        if (probe.waitForConnected(150)) {
+            probe.write("show");
+            probe.flush();
+            probe.waitForBytesWritten(150);
+            qDebug() << "[Atlas] Another instance is already running; told it to show. Exiting.";
+            return 0;
+        }
+    }
+    QLocalServer::removeServer(kInstanceName); // clean up stale socket after a crash
+    QLocalServer instanceServer;
+    if (!instanceServer.listen(kInstanceName)) {
+        qWarning() << "[Atlas] Could not claim single-instance socket:" << instanceServer.errorString();
+    }
 
     qmlRegisterType<SearchViewModel>("Atlas", 1, 0, "SearchViewModel");
 
@@ -82,6 +129,55 @@ int main(int argc, char *argv[]) {
     // Initialize native event host, DWM composition, and global hotkeys
     auto nativeHost = new AtlasNativeHost(rootWindow, &app);
     app.installNativeEventFilter(nativeHost);
+
+    // A second launch pings the socket: show the window.
+    QObject::connect(&instanceServer, &QLocalServer::newConnection, nativeHost, [&]() {
+        while (QLocalSocket *conn = instanceServer.nextPendingConnection()) {
+            conn->deleteLater();
+        }
+        qDebug() << "[Atlas] Second-instance ping received: showing window.";
+        nativeHost->showWindow();
+    });
+
+    // System tray: show/hide, autostart toggle, quit.
+    QSystemTrayIcon tray(makeAppIcon());
+    tray.setToolTip(QStringLiteral("Atlas — Alt+Space"));
+    QMenu trayMenu;
+    QObject::connect(trayMenu.addAction(QStringLiteral("Show Atlas")), &QAction::triggered,
+                     nativeHost, &AtlasNativeHost::showWindow);
+
+    QAction *autoStart = trayMenu.addAction(QStringLiteral("Start with Windows"));
+    autoStart->setCheckable(true);
+    {
+        QSettings runKey(QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"),
+                         QSettings::NativeFormat);
+        autoStart->setChecked(runKey.contains(QStringLiteral("Atlas")));
+    }
+    QObject::connect(autoStart, &QAction::toggled, [](bool on) {
+        QSettings runKey(QStringLiteral("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"),
+                         QSettings::NativeFormat);
+        if (on) {
+            runKey.setValue(QStringLiteral("Atlas"),
+                            QLatin1Char('"') +
+                                QDir::toNativeSeparators(QCoreApplication::applicationFilePath()) +
+                                QLatin1Char('"'));
+        } else {
+            runKey.remove(QStringLiteral("Atlas"));
+        }
+    });
+
+    trayMenu.addSeparator();
+    QObject::connect(trayMenu.addAction(QStringLiteral("Quit Atlas")), &QAction::triggered,
+                     &app, &QCoreApplication::quit);
+    tray.setContextMenu(&trayMenu);
+    QObject::connect(&tray, &QSystemTrayIcon::activated, nativeHost,
+                     [nativeHost](QSystemTrayIcon::ActivationReason reason) {
+                         if (reason == QSystemTrayIcon::Trigger ||
+                             reason == QSystemTrayIcon::DoubleClick) {
+                             nativeHost->toggleVisibility();
+                         }
+                     });
+    tray.show();
 
     qDebug() << "[Atlas] Launcher engine initialized & running in background.";
     return app.exec();

@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml Widgets Sql Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml Widgets Sql Concurrent Network)
 
 qt_standard_project_setup()
 
@@ -89,6 +89,7 @@ target_link_libraries(atlas PRIVATE
     Qt6::Widgets
     Qt6::Sql
     Qt6::Concurrent
+    Qt6::Network
 )
 
 target_link_libraries(atlas PRIVATE ${INDEXER_IMPLIB})

@@ -177,23 +177,47 @@ void AtlasNativeHost::startKeyboardHook() {
     if (m_hookInstalled) return;
 
     m_hookThread = std::thread([this]() {
+        constexpr int FALLBACK_HOTKEY_ID = 0xA71A;
+
         m_hookThreadId = GetCurrentThreadId();
         HHOOK hook = SetWindowsHookExW(WH_KEYBOARD_LL, keyboardHookProc, GetModuleHandleW(nullptr), 0);
         m_hookInstalled = (hook != nullptr);
 
-        if (!hook) {
-            qWarning() << "[AtlasNativeHost] Failed to install low-level keyboard hook.";
+        // Safety net: Windows silently uninstalls a low-level hook whose
+        // callback ever exceeds the system timeout. While the hook is alive it
+        // swallows Alt+Space, so this hotkey never fires; if WM_HOTKEY arrives,
+        // the hook is dead — toggle anyway and reinstall it.
+        const bool fallbackRegistered =
+            RegisterHotKey(nullptr, FALLBACK_HOTKEY_ID, MOD_ALT | MOD_NOREPEAT, VK_SPACE);
+
+        if (!hook && !fallbackRegistered) {
+            qWarning() << "[AtlasNativeHost] Failed to install keyboard hook AND fallback hotkey.";
             return;
         }
-
-        qDebug() << "[AtlasNativeHost] Low-level keyboard hook active (Alt + Space).";
+        qDebug() << "[AtlasNativeHost] Hotkey active (Alt + Space): hook="
+                 << (hook != nullptr) << "fallback=" << fallbackRegistered;
 
         MSG msg;
         while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+            if (msg.message == WM_HOTKEY && msg.wParam == FALLBACK_HOTKEY_ID) {
+                PerfTrace::hotkeyPressed();
+                if (g_nativeHost) {
+                    QMetaObject::invokeMethod(g_nativeHost, &AtlasNativeHost::toggleVisibility,
+                                              Qt::QueuedConnection);
+                }
+                if (hook) UnhookWindowsHookEx(hook);
+                hook = SetWindowsHookExW(WH_KEYBOARD_LL, keyboardHookProc,
+                                         GetModuleHandleW(nullptr), 0);
+                m_hookInstalled = (hook != nullptr);
+                qWarning() << "[AtlasNativeHost] Hook was dead (fallback hotkey fired); reinstalled ="
+                           << m_hookInstalled.load();
+                continue;
+            }
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
-        UnhookWindowsHookEx(hook);
+        if (fallbackRegistered) UnregisterHotKey(nullptr, FALLBACK_HOTKEY_ID);
+        if (hook) UnhookWindowsHookEx(hook);
     });
 #endif
 }
