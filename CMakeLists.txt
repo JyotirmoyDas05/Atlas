@@ -56,6 +56,10 @@ qt_add_executable(atlas
 )
 add_dependencies(atlas atlas_indexer_build)
 
+# GUI subsystem: without this, Windows attaches a console window to every
+# launch. Diagnostics go to atlas_debug.log, so the console serves no purpose.
+set_target_properties(atlas PROPERTIES WIN32_EXECUTABLE TRUE)
+
 qt_add_qml_module(atlas
     URI Atlas
     VERSION 1.0
