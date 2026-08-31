@@ -17,6 +17,7 @@ public:
     Q_INVOKABLE void toggleVisibility();
     Q_INVOKABLE void showWindow();
     Q_INVOKABLE void hideWindow();
+    void prewarmRender();
 
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
 
@@ -28,6 +29,7 @@ private:
     void stopKeyboardHook();
 
     QQuickWindow *m_window{nullptr};
+    bool m_prewarmPending{false};
 
     // Low-level keyboard hook thread members
     std::thread m_hookThread;

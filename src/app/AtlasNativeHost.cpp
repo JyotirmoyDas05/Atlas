@@ -8,6 +8,7 @@
 #include <QScreen>
 #include <QEvent>
 #include <QMetaObject>
+#include <QTimer>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -96,7 +97,34 @@ AtlasNativeHost::AtlasNativeHost(QQuickWindow *window, QObject *parent)
 
         applyWindowsChrome();
         startKeyboardHook();
+
+        // First-ever window show pays QML layout + swapchain creation
+        // (~130ms measured). Render one invisible frame at startup so the
+        // first real toggle is as fast as every other one.
+        QTimer::singleShot(50, this, &AtlasNativeHost::prewarmRender);
     }
+}
+
+void AtlasNativeHost::prewarmRender() {
+    if (!m_window || m_window->isVisible()) return;
+
+    m_prewarmPending = true;
+    m_window->setOpacity(0.0);
+
+    auto *conn = new QMetaObject::Connection;
+    *conn = connect(m_window, &QQuickWindow::frameSwapped, this, [this, conn]() {
+        QObject::disconnect(*conn);
+        delete conn;
+        // Only clean up if a real showWindow() didn't interleave with us.
+        if (m_prewarmPending) {
+            m_prewarmPending = false;
+            m_window->hide();
+            m_window->setOpacity(1.0);
+            PerfTrace::log(QStringLiteral("prewarm_render done"));
+        }
+    });
+
+    m_window->show();
 }
 
 AtlasNativeHost::~AtlasNativeHost() {
@@ -201,6 +229,12 @@ static void forceForegroundFocusWin(HWND hWnd) {
 
 void AtlasNativeHost::showWindow() {
     if (!m_window) return;
+
+    // If a prewarm is mid-flight, take over: make the window real.
+    if (m_prewarmPending) {
+        m_prewarmPending = false;
+        m_window->setOpacity(1.0);
+    }
 
     // Measure hotkey -> first rendered frame (the real perceived toggle latency).
     auto *conn = new QMetaObject::Connection;

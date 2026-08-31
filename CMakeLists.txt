@@ -96,8 +96,13 @@ if (WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${INDEXER_DLL} $<TARGET_FILE_DIR:atlas>
         COMMENT "Copying atlas_indexer.dll"
     )
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(WINDEPLOYQT_MODE --debug)
+    else()
+        set(WINDEPLOYQT_MODE --release)
+    endif()
     add_custom_command(TARGET atlas POST_BUILD
-        COMMAND ${Qt6_DIR}/../../../bin/windeployqt.exe --debug --qmldir ${CMAKE_SOURCE_DIR}/src/ui $<TARGET_FILE:atlas>
+        COMMAND ${Qt6_DIR}/../../../bin/windeployqt.exe ${WINDEPLOYQT_MODE} --qmldir ${CMAKE_SOURCE_DIR}/src/ui $<TARGET_FILE:atlas>
         COMMENT "Deploying Qt runtime DLLs"
     )
 endif()
