@@ -51,6 +51,10 @@ public:
     Q_INVOKABLE void activateRow(int row);
     Q_INVOKABLE void setFilterText(const QString &query) { applyFilter(query); }
 
+    // Action panel for the currently selected row (nullptr if none or the
+    // source has no source-specific actions).
+    std::unique_ptr<ActionPanelState> actionsForSelected() const;
+
 signals:
     void selectedIndexChanged();
     void countChanged();

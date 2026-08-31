@@ -20,6 +20,8 @@
 #include "app/RootSearchModel.hpp"
 #include "app/ThemeBridge.hpp"
 #include "app/ConfigBridge.hpp"
+#include "core/actions/ActionPanelController.hpp"
+#include "core/nav/ListViewHostBase.hpp"
 #include "core/nav/Navigation.hpp"
 
 static const QString kInstanceName = QStringLiteral("atlas-launcher-instance");
@@ -106,6 +108,35 @@ int main(int argc, char *argv[]) {
     RootSearchModel searchModel;
     searchModel.setNavigation(&navigation);
     engine.rootContext()->setContextProperty("searchModel", &searchModel);
+
+    // Action panel always reflects the selected row of whichever list is on
+    // screen: root search at depth 0, or the pushed view's list above it.
+    ActionPanelController actionPanel;
+    engine.rootContext()->setContextProperty("actionPanel", &actionPanel);
+
+    QObject::connect(&searchModel, &SectionListModel::selectedIndexChanged, &actionPanel,
+                     [&] {
+                         if (navigation.depth() == 0)
+                             actionPanel.refreshFrom(&searchModel);
+                     });
+
+    QObject::connect(&navigation, &Navigation::viewPushed, &actionPanel, [&] {
+        auto *listHost = dynamic_cast<ListViewHostBase *>(navigation.currentView());
+        if (!listHost) {
+            actionPanel.refreshFrom(nullptr);
+            return;
+        }
+        actionPanel.refreshFrom(&listHost->model());
+        QObject::connect(&listHost->model(), &SectionListModel::selectedIndexChanged, listHost,
+                         [&actionPanel, listHost] { actionPanel.refreshFrom(&listHost->model()); });
+    });
+
+    QObject::connect(&navigation, &Navigation::viewPopped, &actionPanel, [&] {
+        if (navigation.depth() == 0)
+            actionPanel.refreshFrom(&searchModel);
+    });
+
+    actionPanel.refreshFrom(&searchModel); // initial state (constructor fired before we connected)
 
     const QUrl url(QStringLiteral("qrc:/Atlas/src/ui/MainPalette.qml"));
     qDebug() << "[Atlas] Loading QML from:" << url;

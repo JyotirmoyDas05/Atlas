@@ -1,25 +1,13 @@
 import QtQuick
 import QtQuick.Controls
 
-// Floating action panel popup — triggered by Ctrl+K
+// Floating action panel popup, driven by the global `actionPanel` controller
+// (Ctrl+K). Up/Down/Return/Escape are handled by the window's Shortcut items
+// calling into actionPanel directly.
 Rectangle {
     id: root
 
-    property bool open: false
-    property string selectedItemTitle: ""
-
-    // Static action list — will be made dynamic when extension model lands
-    readonly property var actions: [
-        { title: "Open",                   shortcut: [{ text: "↵" }] },
-        { title: "Copy to Clipboard",      shortcut: [{ text: "⌘" }, { text: "C" }] },
-        { title: "Show in File Explorer",  shortcut: [{ text: "⌘" }, { text: "O" }] },
-        { title: "Configure Shortcut",     shortcut: [{ text: "⌘" }, { text: "K" }] },
-    ]
-
-    signal actionTriggered(int index, string title)
-    signal closed
-
-    visible: root.open
+    visible: actionPanel.open
     width: 380
     height: Math.min(actionList.count * 34 + 16, 280)
     radius: 10
@@ -27,9 +15,8 @@ Rectangle {
     border.color: Theme.mainWindowBorder
     border.width: 1
 
-    // Entry animation
-    opacity: root.open ? 1.0 : 0.0
-    scale: root.open ? 1.0 : 0.95
+    opacity: actionPanel.open ? 1.0 : 0.0
+    scale: actionPanel.open ? 1.0 : 0.95
     transformOrigin: Item.BottomRight
 
     Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
@@ -43,45 +30,40 @@ Rectangle {
 
         Repeater {
             id: actionList
-            model: root.actions
+            model: actionPanel.model
 
-            delegate: ActionItemDelegate {
-                required property int index
-                required property var modelData
-
+            delegate: Loader {
+                id: delegateLoader
                 width: root.width
-                actionTitle: modelData.title
-                actionShortcut: modelData.shortcut
-                selected: index === root._navIndex
 
-                onActivated: {
-                    root.actionTriggered(index, modelData.title);
-                    root.open = false;
-                    root.closed();
+                required property int index
+                required property var model
+
+                sourceComponent: delegateLoader.model.isSection ? headerComponent : itemComponent
+
+                Component {
+                    id: headerComponent
+
+                    SectionHeader {
+                        width: delegateLoader.width
+                        text: delegateLoader.model.title || ""
+                    }
+                }
+
+                Component {
+                    id: itemComponent
+
+                    ActionItemDelegate {
+                        width: delegateLoader.width
+                        actionTitle:    delegateLoader.model.title          || ""
+                        actionShortcut: delegateLoader.model.shortcutTokens || []
+                        isDanger:       delegateLoader.model.isDanger === true
+                        selected: actionPanel.model.selectedIndex === delegateLoader.index
+
+                        onActivated: actionPanel.model.activateRow(delegateLoader.index)
+                    }
                 }
             }
         }
-    }
-
-    // Navigation index — tracked as a simple property
-    property int _navIndex: 0
-
-    function moveUp() {
-        if (_navIndex > 0) _navIndex--;
-    }
-    function moveDown() {
-        if (_navIndex < actions.length - 1) _navIndex++;
-    }
-    function activateCurrent() {
-        if (_navIndex >= 0 && _navIndex < actions.length) {
-            const a = actions[_navIndex];
-            actionTriggered(_navIndex, a.title);
-            open = false;
-            closed();
-        }
-    }
-
-    onOpenChanged: {
-        if (open) _navIndex = 0;
     }
 }

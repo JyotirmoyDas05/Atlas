@@ -7,6 +7,8 @@ Item {
     // Bound to the selected item title from the search model
     property string navigationTitle: ""
     property bool actionPanelOpen: false
+    property string primaryLabel: "Open"
+    property var primaryShortcutTokens: [{ text: "↵" }]
 
     signal primaryActionRequested
     signal actionsToggleRequested
@@ -54,8 +56,8 @@ Item {
         // Primary action button (Open / ↵)
         FooterButton {
             id: primaryButton
-            label: "Open"
-            shortcutTokens: [{ "text": "↵" }]
+            label: root.primaryLabel
+            shortcutTokens: root.primaryShortcutTokens
             highlighted: true
             Layout.alignment: Qt.AlignVCenter
             onClicked: root.primaryActionRequested()

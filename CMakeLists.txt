@@ -44,11 +44,20 @@ qt_add_executable(atlas
     src/core/fuzzy/Fuzzy.hpp
     src/core/fuzzy/Fuzzy.cpp
     src/core/list/SectionSource.hpp
+    src/core/list/SectionSource.cpp
     src/core/list/SectionListModel.hpp
     src/core/list/SectionListModel.cpp
     src/core/nav/ViewHost.hpp
+    src/core/nav/ListViewHostBase.hpp
     src/core/nav/Navigation.hpp
     src/core/nav/Navigation.cpp
+    src/core/actions/Action.hpp
+    src/core/actions/Action.cpp
+    src/core/actions/ActionPanelState.hpp
+    src/core/actions/ActionPanelModel.hpp
+    src/core/actions/ActionPanelModel.cpp
+    src/core/actions/ActionPanelController.hpp
+    src/core/actions/ActionPanelController.cpp
     src/app/views/ClipboardHistoryViewHost.hpp
     src/app/views/ClipboardHistoryViewHost.cpp
     src/services/apps/AppSearchService.hpp

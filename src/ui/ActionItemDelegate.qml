@@ -9,6 +9,7 @@ Item {
     required property string actionTitle
     required property var actionShortcut   // array of token objects
     property bool selected: false
+    property bool isDanger: false
 
     readonly property bool hovered: mouseArea.containsMouse
 
@@ -34,7 +35,7 @@ Item {
             width: parent.width - shortcut.implicitWidth - 8
             anchors.verticalCenter: parent.verticalCenter
             text: root.actionTitle
-            color: root.selected ? Theme.listItemSelectionFg : Theme.foreground
+            color: root.isDanger ? "#f43f5e" : (root.selected ? Theme.listItemSelectionFg : Theme.foreground)
             font.family: Theme.fontFamily
             font.pixelSize: Theme.regularFontSize
             elide: Text.ElideRight

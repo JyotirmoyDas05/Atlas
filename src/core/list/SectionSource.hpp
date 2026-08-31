@@ -7,6 +7,9 @@
 #include <QString>
 #include <QVariantMap>
 #include <functional>
+#include <memory>
+
+class ActionPanelState;
 
 class SectionSource {
 public:
@@ -24,6 +27,13 @@ public:
 
     // Primary action (Enter / click).
     virtual void activate(int index) = 0;
+
+    // Full action panel for this item (Ctrl+K). Default: no source-specific
+    // actions; the caller falls back to whatever generic actions it wants.
+    // Out-of-line (SectionSource.cpp): the body constructs/destroys a
+    // unique_ptr<ActionPanelState>, which needs the complete type -- keeping
+    // it out of the header means callers don't have to pull that in too.
+    virtual std::unique_ptr<ActionPanelState> actionsFor(int index) const;
 
     // New query text. Synchronous sources filter now; async sources kick off
     // work and call notifyChanged(true) when results land.

@@ -154,29 +154,28 @@ Window {
                 Layout.fillWidth: true
                 navigationTitle: nav.depth > 0 ? nav.currentTitle : searchModel.selectedTitle
                 actionPanelOpen: actionPanel.open
+                primaryLabel: actionPanel.hasActions ? actionPanel.primaryActionTitle : "Open"
+                primaryShortcutTokens: actionPanel.hasActions ? actionPanel.primaryActionShortcutTokens : [{ text: "↵" }]
 
-                onPrimaryActionRequested: {
-                    searchModel.activateSelected();
-                }
-                onActionsToggleRequested: {
-                    actionPanel.open = !actionPanel.open;
-                }
+                onPrimaryActionRequested: activatePrimary()
+                onActionsToggleRequested: actionPanel.toggle()
             }
         }
 
-        // Action Panel Popover 
+        // Action Panel Popover
         // Anchored bottom-right of the card, above the footer (40px)
         ActionPanelPopover {
-            id: actionPanel
+            id: actionPanelPopover
             anchors.right: parent.right
             anchors.rightMargin: 10
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 42   // footer height + 2px gap
-
-            onActionTriggered: function(index, title) {
-                console.log("[Atlas] Action triggered:", title);
-            }
         }
+    }
+
+    function activatePrimary() {
+        if (actionPanel.open) { actionPanel.activateCurrent(); return; }
+        viewStack.currentItem.activateCurrent();
     }
 
     // Navigation stack mirror — C++ Navigation drives the QML StackView
@@ -217,15 +216,12 @@ Window {
 
     Shortcut {
         sequence: "Return"
-        onActivated: {
-            if (actionPanel.open) { actionPanel.activateCurrent(); return; }
-            viewStack.currentItem.activateCurrent();
-        }
+        onActivated: activatePrimary()
     }
 
     Shortcut {
         sequence: "Ctrl+K"
-        onActivated: actionPanel.open = !actionPanel.open
+        onActivated: actionPanel.toggle()
     }
 
     Shortcut {

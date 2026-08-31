@@ -1,5 +1,7 @@
 #include "SectionListModel.hpp"
 
+#include "core/actions/ActionPanelState.hpp"
+
 #include <algorithm>
 
 SectionListModel::SectionListModel(QObject *parent) : QAbstractListModel(parent) {}
@@ -115,6 +117,15 @@ int SectionListModel::firstSelectable() const {
 
 void SectionListModel::activateSelected() {
     activateRow(m_selectedIndex);
+}
+
+std::unique_ptr<ActionPanelState> SectionListModel::actionsForSelected() const {
+    if (m_selectedIndex < 0 || m_selectedIndex >= static_cast<int>(m_rows.size()))
+        return nullptr;
+    const FlatRow &row = m_rows[m_selectedIndex];
+    if (row.isHeader)
+        return nullptr;
+    return m_sources[row.sourceIndex]->actionsFor(row.itemIndex);
 }
 
 void SectionListModel::activateRow(int row) {

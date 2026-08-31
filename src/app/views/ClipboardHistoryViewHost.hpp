@@ -2,17 +2,15 @@
 
 // Pushable clipboard-history view: one SectionListModel over ClipboardService.
 
-#include "core/list/SectionListModel.hpp"
 #include "core/list/SectionSource.hpp"
-#include "core/nav/ViewHost.hpp"
+#include "core/nav/ListViewHostBase.hpp"
 
 #include <QVariantList>
 
 class ClipboardService;
 
-class ClipboardHistoryViewHost : public ViewHost {
+class ClipboardHistoryViewHost : public ListViewHostBase {
     Q_OBJECT
-    Q_PROPERTY(QObject *model READ modelObject CONSTANT)
 
 public:
     explicit ClipboardHistoryViewHost(ClipboardService *clipboard, QObject *parent = nullptr);
@@ -27,8 +25,6 @@ public:
         m_model.setFilterText(text);
     }
 
-    QObject *modelObject() { return &m_model; }
-
 private:
     class HistorySection : public SectionSource {
     public:
@@ -38,6 +34,7 @@ private:
         int count() const override { return static_cast<int>(m_items.size()); }
         QVariantMap item(int index) const override;
         void activate(int index) override;
+        std::unique_ptr<ActionPanelState> actionsFor(int index) const override;
         void setFilter(const QString &query) override;
 
     private:
@@ -47,6 +44,5 @@ private:
 
     ClipboardService *m_clipboard;
     HistorySection m_section;
-    SectionListModel m_model;
     QString m_filter;
 };

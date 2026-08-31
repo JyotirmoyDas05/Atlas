@@ -25,6 +25,7 @@ public:
     QVariantMap item(int index) const override { return m_items.value(index).toMap(); }
     void activate(int index) override;
     void setFilter(const QString &query) override;
+    std::unique_ptr<ActionPanelState> actionsFor(int index) const override;
 
 private:
     CalculatorService *m_calculator;
@@ -40,6 +41,7 @@ public:
     QVariantMap item(int index) const override { return m_items.value(index).toMap(); }
     void activate(int index) override;
     void setFilter(const QString &query) override;
+    std::unique_ptr<ActionPanelState> actionsFor(int index) const override;
 
     // Re-pull the app list from the service (connect to appsChanged).
     void refreshCatalog();
@@ -82,6 +84,7 @@ public:
     QVariantMap item(int index) const override { return m_items.value(index).toMap(); }
     void activate(int index) override;
     void setFilter(const QString &query) override;
+    std::unique_ptr<ActionPanelState> actionsFor(int index) const override;
 
 private:
     SnippetService *m_snippets;
@@ -101,6 +104,7 @@ public:
     QVariantMap item(int index) const override;
     void activate(int index) override;
     void setFilter(const QString &query) override;
+    std::unique_ptr<ActionPanelState> actionsFor(int index) const override;
 
     // Reports async search activity (drives the loading bar).
     void setOnLoading(std::function<void(bool)> callback) {

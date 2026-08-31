@@ -1,5 +1,6 @@
 #include "RootSearchSections.hpp"
 
+#include "core/actions/ActionPanelState.hpp"
 #include "core/fuzzy/Fuzzy.hpp"
 #include "services/apps/AppSearchService.hpp"
 #include "services/calculator/CalculatorService.hpp"
@@ -11,6 +12,7 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
+#include <QProcess>
 #include <QUrl>
 #include <algorithm>
 #include <array>
@@ -24,6 +26,16 @@ QString concisePath(const QString &fullPath) {
     if (!home.isEmpty() && fullPath.startsWith(home, Qt::CaseInsensitive))
         return "~" + fullPath.mid(home.length());
     return fullPath;
+}
+
+void revealInExplorer(const QString &path) {
+    QProcess::startDetached(QStringLiteral("explorer.exe"),
+                            {QStringLiteral("/select,"), QDir::toNativeSeparators(path)});
+}
+
+void copyToClipboard(const QString &text) {
+    if (auto *cb = QApplication::clipboard())
+        cb->setText(text);
 }
 
 } // namespace
@@ -56,8 +68,20 @@ void CalculatorSection::setFilter(const QString &query) {
 }
 
 void CalculatorSection::activate(int index) {
-    if (auto *cb = QApplication::clipboard())
-        cb->setText(m_items.value(index).toMap().value("calcAnswer").toString());
+    copyToClipboard(m_items.value(index).toMap().value("calcAnswer").toString());
+}
+
+std::unique_ptr<ActionPanelState> CalculatorSection::actionsFor(int index) const {
+    const QString answer = m_items.value(index).toMap().value("calcAnswer").toString();
+
+    auto state = std::make_unique<ActionPanelState>(ActionPanelState::ShortcutPreset::List);
+    ActionPanelSection *section = state->createSection();
+    auto copy = std::make_shared<Action>(QStringLiteral("Copy Result"),
+                                         [answer] { copyToClipboard(answer); });
+    copy->setPrimary(true);
+    section->actions.push_back(copy);
+    state->finalize();
+    return state;
 }
 
 // ---------------------------------------------------------------------------
@@ -124,6 +148,24 @@ void AppSection::activate(int index) {
         QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
 
+std::unique_ptr<ActionPanelState> AppSection::actionsFor(int index) const {
+    const QString path = m_items.value(index).toMap().value("path").toString();
+
+    auto state = std::make_unique<ActionPanelState>(ActionPanelState::ShortcutPreset::List);
+    ActionPanelSection *section = state->createSection();
+
+    auto open = std::make_shared<Action>(QStringLiteral("Open"),
+                                         [path] { QDesktopServices::openUrl(QUrl::fromLocalFile(path)); });
+    open->setPrimary(true);
+    section->actions.push_back(open);
+    section->actions.push_back(std::make_shared<Action>(QStringLiteral("Copy Path"),
+                                                        [path] { copyToClipboard(path); }));
+    section->actions.push_back(std::make_shared<Action>(QStringLiteral("Show in File Explorer"),
+                                                        [path] { revealInExplorer(path); }));
+    state->finalize();
+    return state;
+}
+
 // ---------------------------------------------------------------------------
 // Built-in commands
 // ---------------------------------------------------------------------------
@@ -181,6 +223,25 @@ void SnippetSection::setFilter(const QString &query) {
 
 void SnippetSection::activate(int index) {
     m_snippets->pasteSnippet(m_items.value(index).toMap().value("id").toString());
+}
+
+std::unique_ptr<ActionPanelState> SnippetSection::actionsFor(int index) const {
+    const QVariantMap entry = m_items.value(index).toMap();
+    const QString id = entry.value("id").toString();
+    const QString text = entry.value("subtitle").toString();
+    SnippetService *snippets = m_snippets;
+
+    auto state = std::make_unique<ActionPanelState>(ActionPanelState::ShortcutPreset::List);
+    ActionPanelSection *section = state->createSection();
+
+    auto paste = std::make_shared<Action>(QStringLiteral("Paste Snippet"),
+                                          [snippets, id] { snippets->pasteSnippet(id); });
+    paste->setPrimary(true);
+    section->actions.push_back(paste);
+    section->actions.push_back(
+        std::make_shared<Action>(QStringLiteral("Copy Text"), [text] { copyToClipboard(text); }));
+    state->finalize();
+    return state;
 }
 
 // ---------------------------------------------------------------------------
@@ -241,4 +302,25 @@ void FileSection::activate(int index) {
         return;
     m_index->recordOpen(path); // frecency: boost next time
     QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+}
+
+std::unique_ptr<ActionPanelState> FileSection::actionsFor(int index) const {
+    const QString path = m_items.value(index).toMap().value("path").toString();
+    FileIndexService *index_ = m_index;
+
+    auto state = std::make_unique<ActionPanelState>(ActionPanelState::ShortcutPreset::List);
+    ActionPanelSection *section = state->createSection();
+
+    auto open = std::make_shared<Action>(QStringLiteral("Open"), [index_, path] {
+        index_->recordOpen(path);
+        QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+    });
+    open->setPrimary(true);
+    section->actions.push_back(open);
+    section->actions.push_back(std::make_shared<Action>(QStringLiteral("Copy Path"),
+                                                        [path] { copyToClipboard(path); }));
+    section->actions.push_back(std::make_shared<Action>(QStringLiteral("Show in File Explorer"),
+                                                        [path] { revealInExplorer(path); }));
+    state->finalize();
+    return state;
 }
