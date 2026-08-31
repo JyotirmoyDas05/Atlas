@@ -4,18 +4,31 @@
 #include <QQuickWindow>
 #include <QIcon>
 #include <QDebug>
+#include <QDateTime>
 #include <QFile>
+#include <QMutex>
 #include <QTextStream>
 #include "app/AtlasNativeHost.hpp"
 #include "app/SearchViewModel.hpp"
 #include "app/ThemeBridge.hpp"
 #include "app/ConfigBridge.hpp"
 
+// Keep the log file open for the process lifetime: reopening per line costs a
+// synchronous file open on hot paths (every qDebug during search/toggle).
 void fileLogHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
-    QFile file("atlas_debug.log");
-    if (file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
-        QTextStream stream(&file);
-        stream << msg << "\n";
+    Q_UNUSED(type);
+    Q_UNUSED(context);
+    static QMutex mutex;
+    static QFile file("atlas_debug.log");
+    static QTextStream stream = [] {
+        file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+        return QTextStream(&file);
+    }();
+
+    QMutexLocker lock(&mutex);
+    if (file.isOpen()) {
+        stream << QDateTime::currentDateTime().toString("HH:mm:ss.zzz") << ' ' << msg << '\n';
+        stream.flush();
     }
 }
 

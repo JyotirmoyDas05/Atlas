@@ -1,0 +1,5 @@
+build/
+build-release/
+.cache/
+atlas_debug.log
+src/indexer/target/
