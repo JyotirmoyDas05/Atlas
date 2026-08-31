@@ -20,7 +20,7 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: 6
         anchors.rightMargin: 6
-        radius: 6
+        radius: 8
         color: root.selected ? Theme.listItemSelectionBg : (root.hovered ? Theme.listItemHoverBg : "transparent")
         Behavior on color { ColorAnimation { duration: 80 } }
     }
@@ -35,7 +35,7 @@ Item {
             width: parent.width - shortcut.implicitWidth - 8
             anchors.verticalCenter: parent.verticalCenter
             text: root.actionTitle
-            color: root.isDanger ? "#f43f5e" : (root.selected ? Theme.listItemSelectionFg : Theme.foreground)
+            color: root.isDanger ? Theme.danger : (root.selected ? Theme.listItemSelectionFg : Theme.foreground)
             font.family: Theme.fontFamily
             font.pixelSize: Theme.regularFontSize
             elide: Text.ElideRight

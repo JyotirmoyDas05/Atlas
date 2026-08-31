@@ -15,6 +15,13 @@ Item {
 
     implicitHeight: 40
 
+    // Elevated bar so the footer reads as a status bar, not floating text
+    // over the same background as the list content.
+    Rectangle {
+        anchors.fill: parent
+        color: Theme.elevatedBackground
+    }
+
     // Top border separating content from footer
     Rectangle {
         anchors.top: parent.top
@@ -42,7 +49,7 @@ Item {
 
                 Text {
                     text: root.navigationTitle !== "" ? root.navigationTitle : "Atlas"
-                    color: Theme.textMuted
+                    color: root.navigationTitle !== "" ? Theme.textMuted : Theme.accent
                     font.family: Theme.fontFamily
                     font.pixelSize: Theme.smallerFontSize
                     font.weight: Font.Medium

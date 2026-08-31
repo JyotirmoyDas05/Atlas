@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Effects
 
 // Floating action panel popup, driven by the global `actionPanel` controller
 // (Ctrl+K). Up/Down/Return/Escape are handled by the window's Shortcut items
@@ -11,9 +12,20 @@ Rectangle {
     width: 380
     height: Math.min(actionList.count * 34 + 16, 280)
     radius: 10
-    color: Theme.secondaryBackground
+    color: Theme.elevatedBackground
     border.color: Theme.mainWindowBorder
     border.width: 1
+
+    // Floating drop shadow so the panel reads as sitting above the list,
+    // not pasted onto it.
+    layer.enabled: true
+    layer.effect: MultiEffect {
+        shadowEnabled: true
+        shadowColor: "#000000"
+        shadowOpacity: 0.5
+        shadowBlur: 0.7
+        shadowVerticalOffset: 8
+    }
 
     opacity: actionPanel.open ? 1.0 : 0.0
     scale: actionPanel.open ? 1.0 : 0.95

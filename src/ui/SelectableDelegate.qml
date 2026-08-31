@@ -1,6 +1,7 @@
 import QtQuick
 
-// Reusable delegate base: provides selection/hover background and click handling
+// Reusable delegate base: selection/hover background, an accent bar on the
+// selected row, and click handling.
 Item {
     id: root
 
@@ -24,6 +25,22 @@ Item {
             if (root.hovered)  return Theme.listItemHoverBg;
             return "transparent";
         }
+        Behavior on color { ColorAnimation { duration: 80 } }
+    }
+
+    // Accent indicator: a slim rounded bar on the leading edge of the
+    // selected row -- reads as "current" at a glance, independent of theme
+    // contrast, and costs nothing when not selected.
+    Rectangle {
+        width: 3
+        radius: 1.5
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.left: parent.left
+        anchors.leftMargin: 6
+        height: parent.height * 0.5
+        color: Theme.accent
+        opacity: root.selected ? 1.0 : 0.0
+        Behavior on opacity { NumberAnimation { duration: 80 } }
     }
 
     Item {

@@ -12,12 +12,14 @@ Item {
         anchors.right: parent.right
         anchors.leftMargin: root.leftPadding
         anchors.rightMargin: root.leftPadding
-        anchors.verticalCenter: parent.verticalCenter
-        text: root.text
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 6
+        text: root.text.toUpperCase()
         color: Theme.textMuted
         font.family: Theme.fontFamily
-        font.pixelSize: Theme.smallerFontSize
+        font.pixelSize: Theme.smallerFontSize - 1
         font.weight: Font.DemiBold
+        font.letterSpacing: 0.6
         elide: Text.ElideRight
     }
 }

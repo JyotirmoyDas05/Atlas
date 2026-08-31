@@ -3,7 +3,7 @@ import QtQuick.Layouts
 
 SelectableDelegate {
     id: root
-    height: 38
+    height: 42
 
     required property string itemTitle
     required property string itemSubtitle
@@ -15,14 +15,14 @@ SelectableDelegate {
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 12
+        anchors.leftMargin: 14
         anchors.rightMargin: 12
         spacing: 10
 
-        // Icon slot — 26×26
+        // Icon slot
         Item {
-            Layout.preferredWidth: 26
-            Layout.preferredHeight: 26
+            Layout.preferredWidth: 28
+            Layout.preferredHeight: 28
             Layout.alignment: Qt.AlignVCenter
 
             Image {
@@ -38,8 +38,10 @@ SelectableDelegate {
             Rectangle {
                 anchors.fill: parent
                 visible: !appIconImg.visible
-                radius: 6
-                color: root.itemType === "Folder" ? "#3b341f" : (root.itemType === "File" ? "#1e293b" : "#1e1c22")
+                radius: 8
+                color: root.itemType === "Folder" ? Theme.iconFallbackFolder
+                     : root.itemType === "File"   ? Theme.iconFallbackFile
+                     : Theme.iconFallbackApp
                 border.color: Theme.mainWindowBorder
                 border.width: 1
             }
@@ -113,17 +115,7 @@ SelectableDelegate {
         TextBadge {
             visible: root.itemType !== ""
             text: root.itemType
-            contentColor: {
-                if (root.itemType === "Game")         return "#f43f5e";
-                if (root.itemType === "Developer")    return "#38bdf8";
-                if (root.itemType === "Browser")      return "#34d399";
-                if (root.itemType === "Design")       return "#fbbf24";
-                if (root.itemType === "Productivity") return "#a78bfa";
-                if (root.itemType === "System")       return "#9ca3af";
-                if (root.itemType === "Folder")       return "#eab308";
-                if (root.itemType === "Built-in")     return "#38bdf8";
-                return "#c084fc";
-            }
+            contentColor: Theme.categoryColor(root.itemType)
             Layout.alignment: Qt.AlignVCenter
         }
     }

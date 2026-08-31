@@ -13,6 +13,14 @@ Item {
         spacing: 12
 
         Text {
+            text: "⌕"
+            font.pixelSize: 32
+            color: Theme.mainWindowBorder
+            Layout.alignment: Qt.AlignHCenter
+            Layout.bottomMargin: 4
+        }
+
+        Text {
             visible: root.title !== ""
             text: root.title
             color: Theme.foreground
