@@ -35,10 +35,17 @@ qt_add_executable(atlas
     src/app/AtlasNativeHost.cpp
     src/app/PerfTrace.hpp
     src/app/PerfTrace.cpp
-    src/app/SearchViewModel.hpp
-    src/app/SearchViewModel.cpp
+    src/app/RootSearchModel.hpp
+    src/app/RootSearchModel.cpp
+    src/app/RootSearchSections.hpp
+    src/app/RootSearchSections.cpp
     src/app/ThemeBridge.hpp
     src/app/ConfigBridge.hpp
+    src/core/fuzzy/Fuzzy.hpp
+    src/core/fuzzy/Fuzzy.cpp
+    src/core/list/SectionSource.hpp
+    src/core/list/SectionListModel.hpp
+    src/core/list/SectionListModel.cpp
     src/services/apps/AppSearchService.hpp
     src/services/apps/AppSearchService.cpp
     src/services/files/WinFileSearchService.hpp

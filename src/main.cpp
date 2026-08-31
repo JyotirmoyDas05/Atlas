@@ -17,7 +17,7 @@
 #include <QSystemTrayIcon>
 #include <QTextStream>
 #include "app/AtlasNativeHost.hpp"
-#include "app/SearchViewModel.hpp"
+#include "app/RootSearchModel.hpp"
 #include "app/ThemeBridge.hpp"
 #include "app/ConfigBridge.hpp"
 
@@ -91,8 +91,6 @@ int main(int argc, char *argv[]) {
         qWarning() << "[Atlas] Could not claim single-instance socket:" << instanceServer.errorString();
     }
 
-    qmlRegisterType<SearchViewModel>("Atlas", 1, 0, "SearchViewModel");
-
     QQmlApplicationEngine engine;
 
     // Expose Theme and Config bridges to QML
@@ -101,8 +99,8 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("Theme", &themeBridge);
     engine.rootContext()->setContextProperty("Config", &configBridge);
 
-    SearchViewModel viewModel;
-    engine.rootContext()->setContextProperty("searchModel", &viewModel);
+    RootSearchModel searchModel;
+    engine.rootContext()->setContextProperty("searchModel", &searchModel);
 
     const QUrl url(QStringLiteral("qrc:/Atlas/src/ui/MainPalette.qml"));
     qDebug() << "[Atlas] Loading QML from:" << url;

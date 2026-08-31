@@ -55,7 +55,7 @@ Item {
         topMargin: 4
         bottomMargin: 4
 
-        model: searchModel.results
+        model: searchModel
         currentIndex: searchModel.selectedIndex
 
         onCurrentIndexChanged: {
@@ -63,13 +63,13 @@ Item {
             root.itemSelected(currentIndex);
         }
 
-        // Sync when model resets (new query)
+        // Sync when the model rebuilds (new query / async results landing)
         Connections {
             target: searchModel
-            function onResultsChanged() {
+            function onSelectedIndexChanged() {
                 listView.currentIndex = searchModel.selectedIndex;
                 if (listView.currentIndex >= 0)
-                    listView.positionViewAtIndex(listView.currentIndex, ListView.Beginning);
+                    listView.positionViewAtIndex(listView.currentIndex, ListView.Contain);
             }
         }
 
@@ -93,10 +93,10 @@ Item {
             width: listView.width
 
             required property int index
-            required property var modelData
+            required property var model
 
-            readonly property bool isHeader: delegateLoader.modelData["isSectionHeader"] === true
-            readonly property bool isCalc:   delegateLoader.modelData["isCalculator"] === true
+            readonly property bool isHeader: delegateLoader.model.isSection === true
+            readonly property bool isCalc:   delegateLoader.model.isCalculator === true
 
             sourceComponent: isHeader ? headerComponent : (isCalc ? calcComponent : itemComponent)
 
@@ -105,7 +105,7 @@ Item {
 
                 SectionHeader {
                     width: delegateLoader.width
-                    text: delegateLoader.modelData["title"] || ""
+                    text: delegateLoader.model.title || ""
                 }
             }
 
@@ -114,10 +114,10 @@ Item {
 
                 CalculatorResultDelegate {
                     width: delegateLoader.width
-                    calcQuestion:     delegateLoader.modelData["calcQuestion"]     || ""
-                    calcQuestionUnit: delegateLoader.modelData["calcQuestionUnit"] || ""
-                    calcAnswer:       delegateLoader.modelData["calcAnswer"]       || ""
-                    calcAnswerUnit:   delegateLoader.modelData["calcAnswerUnit"]   || ""
+                    calcQuestion:     delegateLoader.model.calcQuestion     || ""
+                    calcQuestionUnit: delegateLoader.model.calcQuestionUnit || ""
+                    calcAnswer:       delegateLoader.model.calcAnswer       || ""
+                    calcAnswerUnit:   delegateLoader.model.calcAnswerUnit   || ""
 
                     selected: listView.currentIndex === delegateLoader.index
 
@@ -127,7 +127,7 @@ Item {
                     onActivated: {
                         listView.currentIndex = delegateLoader.index;
                         root.itemActivated(delegateLoader.index);
-                        searchModel.activateSelected();
+                        searchModel.activateRow(delegateLoader.index);
                     }
                 }
             }
@@ -137,11 +137,11 @@ Item {
 
                 ListItemDelegate {
                     width: delegateLoader.width
-                    itemTitle:      delegateLoader.modelData["title"]    || ""
-                    itemSubtitle:   delegateLoader.modelData["subtitle"] || ""
-                    itemType:       delegateLoader.modelData["type"]     || ""
-                    itemAlias:      delegateLoader.modelData["alias"]    || ""
-                    itemIconSource: delegateLoader.modelData["icon"]     || ""
+                    itemTitle:      delegateLoader.model.title    || ""
+                    itemSubtitle:   delegateLoader.model.subtitle || ""
+                    itemType:       delegateLoader.model.type     || ""
+                    itemAlias:      delegateLoader.model.alias    || ""
+                    itemIconSource: delegateLoader.model.icon     || ""
 
                     selected: listView.currentIndex === delegateLoader.index
 
@@ -151,7 +151,7 @@ Item {
                     onActivated: {
                         listView.currentIndex = delegateLoader.index;
                         root.itemActivated(delegateLoader.index);
-                        searchModel.activateSelected();
+                        searchModel.activateRow(delegateLoader.index);
                     }
                 }
             }
